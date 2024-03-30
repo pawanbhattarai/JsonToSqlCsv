@@ -1,1 +1,0 @@
-INSERT INTO test (ppu, id, type, id, type, id, type, id, type, name, id, type, id, type, id, type, id, type, id, type, id, type, id, type, id, type) VALUES (0.55, 1001, Regular, 1002, Chocolate, 1003, Blueberry, 1004, Devil''s Food, Cake, 0001, donut, 5001, None, 5002, Glazed, 5005, Sugar, 5007, Powdered Sugar, 5006, Chocolate with Sprinkles, 5003, Chocolate, 5004, Maple);

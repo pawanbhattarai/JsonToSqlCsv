@@ -2,11 +2,8 @@ package com.DSS.JsonToSqlCsv.Service;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -16,33 +13,34 @@ import java.util.Set;
 */
 
 public class Service {
-	public static String convertJsonToSql(JSONObject jsonObject, String tableName) throws JSONException {
+	public static byte[] convertJsonToSql(JSONArray jsonArray, String tableName) throws JSONException {
 	    StringBuilder sqlBuilder = new StringBuilder();
 
-	    // Write column names
-	    sqlBuilder.append("INSERT INTO ").append(tableName).append(" (");
+	    // Iterate through JSON array elements and convert each to SQL
+	    for (int i = 0; i < jsonArray.length(); i++) {
+	        JSONObject jsonObject = jsonArray.getJSONObject(i);
 
-	    List<String> columnNames = new ArrayList<>();
-	    extractColumnNames(jsonObject, columnNames);
-	    sqlBuilder.append(String.join(", ", columnNames));
+	        // Write INSERT statement for each JSON object
+	        sqlBuilder.append("INSERT INTO ").append(tableName).append(" (");
 
-	    sqlBuilder.append(") VALUES (");
+	        List<String> columnNames = new ArrayList<>();
+	        extractColumnNames(jsonObject, columnNames);
+	        sqlBuilder.append(String.join(", ", columnNames));
 
-	    // Write column values
-	    List<String> columnValues = new ArrayList<>();
-	    extractColumnValues(jsonObject, columnValues);
-	    sqlBuilder.append(String.join(", ", columnValues));
+	        sqlBuilder.append(") VALUES (");
 
-	    sqlBuilder.append(");\n");
+	        // Write column values
+	        List<String> columnValues = new ArrayList<>();
+	        extractColumnValues(jsonObject, columnValues);
+	        sqlBuilder.append(String.join(", ", columnValues));
 
-        // Generate unique filename
-        String fileName = generateSqlFileName();
+	        sqlBuilder.append(");\n");
+	    }
 
-        // Write CSV to a file
-        writeToFile(sqlBuilder.toString(), fileName);
-
-        return fileName;
+	    // Return SQL content as byte array
+	    return sqlBuilder.toString().getBytes(StandardCharsets.UTF_8);
 	}
+
 
 	private static void extractColumnNames(JSONObject jsonObject, List<String> columnNames) throws JSONException {
 	    Iterator<String> keys = jsonObject.keys();
@@ -86,46 +84,41 @@ public class Service {
 	}
 
 	
-    public static String convertJsonToCsv(JSONArray jsonArray) throws JSONException {
-        StringBuilder csvBuilder = new StringBuilder();
+	 public static byte[] convertJsonToCsv(JSONArray jsonArray) throws JSONException {
+	        StringBuilder csvBuilder = new StringBuilder();
 
-        // Extract all unique column headings
-        List<String> columnHeadings = extractColumnHeadings(jsonArray);
+	        // Extract all unique column headings
+	        List<String> columnHeadings = extractColumnHeadings(jsonArray);
 
-        // Write column headings
-        for (int i = 0; i < columnHeadings.size(); i++) {
-            if (i > 0)
-                csvBuilder.append(",");
-            csvBuilder.append(escapeCsvValue(columnHeadings.get(i)));
-        }
-        csvBuilder.append("\n");
+	        // Write column headings
+	        for (int i = 0; i < columnHeadings.size(); i++) {
+	            if (i > 0)
+	                csvBuilder.append(",");
+	            csvBuilder.append(escapeCsvValue(columnHeadings.get(i)));
+	        }
+	        csvBuilder.append("\n");
 
-        // Write data
-        for (int i = 0; i < jsonArray.length(); i++) {
-            JSONObject jsonObject = jsonArray.getJSONObject(i);
-            for (int j = 0; j < columnHeadings.size(); j++) {
-                String heading = columnHeadings.get(j);
-                if (jsonObject.has(heading)) {
-                    if (j > 0)
-                        csvBuilder.append(",");
-                    csvBuilder.append(escapeCsvValue(jsonObject.optString(heading)));
-                } else {
-                    if (j > 0)
-                        csvBuilder.append(",");
-                    csvBuilder.append("");
-                }
-            }
-            csvBuilder.append("\n");
-        }
+	        // Write data
+	        for (int i = 0; i < jsonArray.length(); i++) {
+	            JSONObject jsonObject = jsonArray.getJSONObject(i);
+	            for (int j = 0; j < columnHeadings.size(); j++) {
+	                String heading = columnHeadings.get(j);
+	                if (jsonObject.has(heading)) {
+	                    if (j > 0)
+	                        csvBuilder.append(",");
+	                    csvBuilder.append(escapeCsvValue(jsonObject.optString(heading)));
+	                } else {
+	                    if (j > 0)
+	                        csvBuilder.append(",");
+	                    csvBuilder.append("");
+	                }
+	            }
+	            csvBuilder.append("\n");
+	        }
 
-        // Generate unique filename
-        String fileName = generateCsvFileName();
-
-        // Write CSV to a file
-        writeToFile(csvBuilder.toString(), fileName);
-
-        return fileName;
-    }
+	        // Return CSV content as byte array
+	        return csvBuilder.toString().getBytes(StandardCharsets.UTF_8);
+	    }
 
     private static List<String> extractColumnHeadings(JSONArray jsonArray) throws JSONException {
         Set<String> columnHeadingsSet = new LinkedHashSet<>();
@@ -143,24 +136,6 @@ public class Service {
         }
         return columnHeadings;
     }
-    private static String generateCsvFileName() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-        String timestamp = dateFormat.format(new Date());
-        return "output_" + timestamp + ".csv";
-    }
-    private static String generateSqlFileName() {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
-        String timestamp = dateFormat.format(new Date());
-        return "output_" + timestamp + ".sql";
-    }
-    private static void writeToFile(String content, String fileName) {
-        try (FileWriter writer = new FileWriter(fileName)) {
-            writer.write(content);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     private static String escapeCsvValue(String value) {
         // Check if the value contains special characters
         if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
